@@ -41,11 +41,6 @@ object AutoText {
         val text = macro.text
         val isCommand = text.startsWith("/")
 
-        if (HypixelUtils.INSTANCE.isHypixel && !isCommand) {
-            Notifications.INSTANCE.send("AutoText", "Auto chat messages are disabled on Hypixel")
-            return
-        }
-
         UChat.say(text)
     }
 }
