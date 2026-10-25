@@ -1,46 +1,27 @@
 package me.redth.autotext
 
-import cc.polyfrost.oneconfig.events.EventManager
-import cc.polyfrost.oneconfig.events.event.KeyInputEvent
-import cc.polyfrost.oneconfig.gui.OneConfigGui
-import cc.polyfrost.oneconfig.libs.eventbus.Subscribe
-import cc.polyfrost.oneconfig.libs.universal.UChat
-import cc.polyfrost.oneconfig.renderer.asset.SVG
-import cc.polyfrost.oneconfig.utils.Notifications
-import cc.polyfrost.oneconfig.utils.hypixel.HypixelUtils
+import me.redth.autotext.client.AutoTextRuntime
+import me.redth.autotext.client.MacroEditorTree
 import me.redth.autotext.config.ModConfig
-import me.redth.autotext.element.MacroListOption
-import me.redth.autotext.element.WrappedMacro
-import net.minecraftforge.fml.common.Mod
-import net.minecraftforge.fml.common.event.FMLInitializationEvent
+import net.fabricmc.api.ClientModInitializer
+import org.polyfrost.oneconfig.api.config.v1.ConfigManager
+import org.polyfrost.oneconfig.api.event.v1.eventHandler
+import org.polyfrost.oneconfig.api.event.v1.events.TickEvent
+import org.polyfrost.oneconfig.api.event.v1.events.WorldEvent
 
-@Mod(modid = AutoText.MODID, name = AutoText.NAME, version = AutoText.VERSION, modLanguageAdapter = "cc.polyfrost.oneconfig.utils.KotlinLanguageAdapter")
-object AutoText {
-    const val MODID = "@ID@"
-    const val NAME = "@NAME@"
-    const val VERSION = "@VER@"
-    val PLUS_ICON = SVG("/assets/autotext/icons/plus.svg")
-    val MINUS_ICON = SVG("/assets/autotext/icons/minus.svg")
+object AutoText : ClientModInitializer {
+    const val MODID = "autotext"
+    const val NAME = "AutoText"
 
-    @Mod.EventHandler
-    fun onInit(e: FMLInitializationEvent) {
-        ModConfig.initialize()
-        EventManager.INSTANCE.register(this)
-    }
+    override fun onInitializeClient() {
+        ModConfig.preload()
+        MacroEditorTree.syncRegistry()
+        ConfigManager.addProfileChangeListener { AutoTextRuntime.onProfileChanged() }
+        AutoTextRuntime.initialize()
 
-    @Subscribe
-    fun onKeyInput(event: KeyInputEvent) {
-        for (wrapped in MacroListOption.wrappedMacros) {
-            wrapped.onKeyInput()
-        }
-    }
-
-    private fun WrappedMacro.onKeyInput() {
-        if (!macro.enabled) return
-        if (!firstPressed()) return
-        val text = macro.text
-        val isCommand = text.startsWith("/")
-
-        UChat.say(text)
+        eventHandler { _: TickEvent.Start -> AutoTextRuntime.beginTick() }
+        eventHandler { _: TickEvent.End -> AutoTextRuntime.syncIfChanged() }
+        eventHandler { _: WorldEvent.Load -> AutoTextRuntime.clearSession() }
+        eventHandler { _: WorldEvent.Unload -> AutoTextRuntime.clearSession() }
     }
 }

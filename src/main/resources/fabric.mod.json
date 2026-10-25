@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "autotext",
+  "version": "${version}",
+  "name": "AutoText",
+  "description": "Send a saved chat message or command with one key press.",
+  "authors": ["Redth"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "me.redth.autotext.AutoText"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "1.8.9",
+    "java": ">=25",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "oneconfig": ">=1.4.0",
+    "oneconfigv1": ">=1.4.0",
+    "pylon": ">=0.1.7"
+  }
+}

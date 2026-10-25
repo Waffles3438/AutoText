@@ -1,9 +1,17 @@
 package me.redth.autotext.config
 
-import cc.polyfrost.oneconfig.config.core.OneKeyBind
+import java.util.UUID
+import me.redth.autotext.core.MacroBinding
 
 data class Macro(
-    var enabled: Boolean = true,
-    var keyBind: OneKeyBind = OneKeyBind(),
+    var id: String = UUID.randomUUID().toString(),
+    var name: String = "New macro",
     var text: String = "",
-)
+    var enabled: Boolean = true,
+    var binding: MacroBinding = MacroBinding(),
+) {
+    fun deepCopy(
+        id: String = this.id,
+        name: String = this.name,
+    ): Macro = Macro(id, name, text, enabled, binding.deepCopy())
+}
