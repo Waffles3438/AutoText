@@ -20,7 +20,11 @@ object AutoText : ClientModInitializer {
         AutoTextRuntime.initialize()
 
         eventHandler { _: TickEvent.Start -> AutoTextRuntime.beginTick() }
-        eventHandler { _: TickEvent.End -> AutoTextRuntime.syncIfChanged() }
+        eventHandler { _: TickEvent.End ->
+            AutoTextRuntime.syncIfChanged()
+            // Keeps the macro editor registered if OneConfig swaps in the plain config tree.
+            MacroEditorTree.syncRegistry()
+        }
         eventHandler { _: WorldEvent.Load -> AutoTextRuntime.clearSession() }
         eventHandler { _: WorldEvent.Unload -> AutoTextRuntime.clearSession() }
     }

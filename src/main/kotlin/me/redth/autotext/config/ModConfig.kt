@@ -9,7 +9,7 @@ import org.polyfrost.oneconfig.api.config.v1.Config
 import org.polyfrost.oneconfig.api.config.v1.ConfigManager
 import org.polyfrost.oneconfig.api.config.v1.Tree
 
-object ModConfig : Config("autotext.json", AutoText.NAME, Config.Category.QOL) {
+object ModConfig : Config("autotext.json", AutoText.NAME, Category.QOL) {
     @JvmField
     @Volatile
     var enabled = true
@@ -30,8 +30,17 @@ object ModConfig : Config("autotext.json", AutoText.NAME, Config.Category.QOL) {
     @Volatile
     private var state: List<Macro> = emptyList()
 
+    /**
+     * Bumped only when macros are added, removed, or reloaded. The settings tree is rebuilt on this
+     * revision, so plain field edits must not touch it or the open accordion collapses mid-typing.
+     */
     @Volatile
-    var revision: Long = 0L
+    var structureRevision: Long = 0L
+        private set
+
+    /** Bumped when a macro's id, enabled flag, or keybind changes, so keybinds get re-registered. */
+    @Volatile
+    var runtimeRevision: Long = 0L
         private set
 
     override fun initialize(byConfigManager: Boolean) {
@@ -40,7 +49,8 @@ object ModConfig : Config("autotext.json", AutoText.NAME, Config.Category.QOL) {
             val decoded = MacroCodec.decode(macrosJson)
             state = normalize(decoded ?: emptyList())
             macrosJson = MacroCodec.encode(state)
-            revision++
+            structureRevision++
+            runtimeRevision++
         }
     }
 
@@ -61,7 +71,7 @@ object ModConfig : Config("autotext.json", AutoText.NAME, Config.Category.QOL) {
             if (state.size >= MacroCodec.MAX_MACROS) return null
             val index = state.size + 1
             added = Macro(name = "Macro $index")
-            treeToSave = publishLocked(state + added)
+            treeToSave = publishLocked(state + added, structural = true)
         }
         save(treeToSave)
         return added.deepCopy()
@@ -76,7 +86,7 @@ object ModConfig : Config("autotext.json", AutoText.NAME, Config.Category.QOL) {
             update(draft)
             val values = state.toMutableList()
             values[index] = draft
-            treeToSave = publishLocked(values)
+            treeToSave = publishLocked(values, structural = false)
         }
         save(treeToSave)
         return true
@@ -86,18 +96,28 @@ object ModConfig : Config("autotext.json", AutoText.NAME, Config.Category.QOL) {
         val treeToSave: Tree?
         synchronized(stateLock) {
             if (state.none { it.id == id }) return false
-            treeToSave = publishLocked(state.filterNot { it.id == id })
+            treeToSave = publishLocked(state.filterNot { it.id == id }, structural = true)
         }
         save(treeToSave)
         return true
     }
 
-    private fun publishLocked(values: List<Macro>): Tree? {
-        state = normalize(values)
-        macrosJson = MacroCodec.encode(state)
-        revision++
+    private fun publishLocked(values: List<Macro>, structural: Boolean): Tree? {
+        val previous = state
+        val next = normalize(values)
+        state = next
+        macrosJson = MacroCodec.encode(next)
+        if (structural) structureRevision++
+        if (!sameRuntimeShape(previous, next)) runtimeRevision++
         return tree
     }
+
+    private fun sameRuntimeShape(first: List<Macro>, second: List<Macro>): Boolean =
+        first.size == second.size && first.indices.all { i ->
+            val a = first[i]
+            val b = second[i]
+            a.id == b.id && a.enabled == b.enabled && a.binding.fingerprint() == b.binding.fingerprint()
+        }
 
     private fun save(treeToSave: Tree?) {
         treeToSave ?: return

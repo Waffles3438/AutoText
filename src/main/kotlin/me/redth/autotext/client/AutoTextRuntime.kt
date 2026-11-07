@@ -47,14 +47,13 @@ object AutoTextRuntime {
                 registered[macro.id] = KeybindManager.register(keybind)
             }
         }
-        observedRevision = ModConfig.revision
+        observedRevision = ModConfig.runtimeRevision
     }
 
     fun syncIfChanged() {
-        if (ModConfig.revision != observedRevision) {
+        if (ModConfig.runtimeRevision != observedRevision) {
             executor.clearSession()
             refreshBindings()
-            MacroEditorTree.syncRegistry()
         }
     }
 
@@ -70,7 +69,7 @@ object AutoTextRuntime {
 
     private fun trigger(id: String, expectedBinding: String, callbackEpoch: Long) {
         if (callbackEpoch != registrationEpoch) return
-        if (ModConfig.revision != observedRevision) {
+        if (ModConfig.runtimeRevision != observedRevision) {
             refreshBindings()
             return
         }
