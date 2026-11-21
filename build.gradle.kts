@@ -1,8 +1,8 @@
 plugins {
-    kotlin("jvm") version "2.4.20"
-    id("org.jetbrains.kotlin.plugin.compose") version "2.4.20"
-    id("net.fabricmc.fabric-loom-remap") version "1.18.4"
-    id("ploceus") version "1.18.1"
+    kotlin("jvm") version "2.4.21"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.21"
+    id("net.fabricmc.fabric-loom-remap") version "1.19.4"
+    id("ploceus") version "1.19.2"
 }
 
 version = "${property("mod_version")}+mc${property("minecraft_version")}-ornithe"
@@ -27,7 +27,7 @@ ploceus {
 }
 
 val oneconfigVersion = property("oneconfig_version").toString()
-val composeBundleVersion = property("compose_bundle_version").toString()
+val polycomposeVersion = property("polycompose_version").toString()
 
 dependencies {
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
@@ -39,10 +39,9 @@ dependencies {
 
     // The API platform must be explicit because Loom removes nested jars in development.
     modImplementation("org.polyfrost.oneconfig:1.8.9-ornithe:$oneconfigVersion")
+    // OneConfig 1.9.0 moved Compose into PolyCompose. Its jar nests the Compose runtime.
+    modImplementation("org.polyfrost:polycompose-1.8.9-ornithe:$polycomposeVersion")
     modRuntimeOnly("maven.modrinth:oneconfig:${property("oneconfig_runtime_version")}") {
-        isTransitive = false
-    }
-    modRuntimeOnly("org.polyfrost.oneconfig:compose-bundle:$composeBundleVersion") {
         isTransitive = false
     }
 }
